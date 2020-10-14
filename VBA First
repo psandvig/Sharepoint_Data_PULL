@@ -1,0 +1,81 @@
+Sub opentable()
+
+'Basic Parameters for entire code
+
+'Timer to measure total macro run time
+Dim StartTime As Double
+Dim MinutesElapsed As String
+StartTime = Timer
+
+Dim BUD_Rollup As Workbook
+Set BUD_Rollup = ThisWorkbook
+
+Dim BUDREV As Worksheet
+Set BUDREV = BUD_Rollup.Sheets("FileLocation")
+
+Dim PS_ROllUP As Worksheet
+Set PS_ROllUP = BUD_Rollup.Sheets("Rollup")
+
+
+Application.ScreenUpdating = False
+
+
+'Step 1: Code to open up store review workbooks (set up as a loop)
+
+Dim i As Long
+For i = 2 To Application.CountA(BUDREV.Range("D:D"))
+
+Application.StatusBar = "Current iteration: " & i - 1 & " of " & Application.CountA(BUDREV.Range("D2:D100")) & " - " & BUDREV.Range("A" & i)
+
+
+Application.DisplayAlerts = False
+Workbooks.Open Filename:=BUDREV.Range("D" & i).Value, ReadOnly:=True, notify:=True
+Application.DisplayAlerts = True
+                
+         '''Code below opens workbook and requires user to manually accept read only version
+         'Workbooks.Open Filename:=BUDREV.Range("D" & i)
+
+On Error Resume Next
+
+'Step 2: Unlocking workbook and bud table
+
+Dim Region_BUD As Workbook
+Set Region_BUD = ActiveWorkbook
+
+Region_BUD.Unprotect "bud"
+Worksheets("BUDTABLE").Visible = True
+
+Dim BUDTABLE As Worksheet
+Set BUDTABLE = ThisWorkbook.Sheets("BUDTABLE")
+
+'step 3 : Copy Budtable Data
+
+Dim PS_ROLLUP_LastRow As Long
+PS_ROLLUP_LastRow = PS_ROllUP.Cells(Rows.Count, "A").End(xlUp).Row
+
+BUDTABLE.Activate
+Range("A1:AH1000").Copy
+PS_ROllUP.Range("A" & PS_ROLLUP_LastRow).PasteSpecial xlPasteValues
+
+'step4: Close and lock workbooks
+
+Region_BUD.Activate
+Worksheets("BUDTABLE").Visible = False
+Region_BUD.Protect "bud"
+Region_BUD.Close SaveChanges = True
+
+Next i
+
+Application.ScreenUpdating = True
+Application.StatusBar = False
+PS_ROllUP.Activate
+
+MinutesElapsed = Format((Timer - StartTime) / 86400, "hh:mm:ss")
+
+
+MsgBox ("Rollup Budget Updated" & vbNewLine & _
+        "Total run time: " & MinutesElapsed & " minutes"), vbInformation
+
+End Sub
+
+
